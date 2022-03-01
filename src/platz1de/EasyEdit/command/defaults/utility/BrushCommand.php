@@ -18,7 +18,7 @@ class BrushCommand extends EasyEditCommand
 {
 	public function __construct()
 	{
-		parent::__construct("/brush", "Create a new Brush", [KnownPermissions::PERMISSION_BRUSH], "//brush sphere [radius] [pattern]\n//brush smooth [radius]\n//brush naturalize [radius] [topBlock] [middleBlock] [bottomBlock]\n//brush cylinder [radius] [height] [pattern]", ["/br"]);
+		parent::__construct("/brush", "Create a new Brush", [KnownPermissions::PERMISSION_BRUSH], "//brush sphere [radius] [pattern] [gravity]\n//brush smooth [radius]\n//brush naturalize [radius] [topBlock] [middleBlock] [bottomBlock]\n//brush cylinder [radius] [height] [pattern] [gravity]\n//brush paste [insert]", ["/br"]);
 	}
 
 	/**
@@ -27,14 +27,19 @@ class BrushCommand extends EasyEditCommand
 	 */
 	public function process(Player $player, array $args): void
 	{
-		$type = BrushHandler::nameToIdentifier($args[0] ?? "");
+		ArgumentParser::requireArgumentCount($args, 1, $this);
+		$type = BrushHandler::nameToIdentifier($args[0]);
 
 		$nbt = CompoundTag::create()->setString("brushType", BrushHandler::identifierToName($type));
 		switch ($type) {
 			case BrushHandler::BRUSH_SPHERE:
-				ArgumentParser::parseCombinedPattern($player, $args, 2, "stone");
+				try {
+					PatternParser::parseInput($args[2] ?? "stone", $player);
+				} catch (ParseError $exception) {
+					throw new PatternParseException($exception);
+				}
 				$nbt->setFloat("brushSize", (float) ($args[1] ?? 3));
-				$nbt->setString("brushPattern", $args[2] ?? "stone");
+				$nbt->setString("brushPattern", ArgumentParser::parseBool(false, $args[3] ?? null) ? "gravity(" . ($args[2] ?? "stone") . ")" : $args[2] ?? "stone");
 				break;
 			case BrushHandler::BRUSH_SMOOTH:
 				$nbt->setFloat("brushSize", (float) ($args[1] ?? 5));
@@ -53,10 +58,17 @@ class BrushCommand extends EasyEditCommand
 				$nbt->setString("bottomBlock", $args[4] ?? "stone");
 				break;
 			case BrushHandler::BRUSH_CYLINDER:
-				ArgumentParser::parseCombinedPattern($player, $args, 3, "stone");
+				try {
+					PatternParser::parseInput($args[3] ?? "stone", $player);
+				} catch (ParseError $exception) {
+					throw new PatternParseException($exception);
+				}
 				$nbt->setFloat("brushSize", (float) ($args[1] ?? 4));
 				$nbt->setShort("brushHeight", (int) ($args[2] ?? 2));
-				$nbt->setString("brushPattern", $args[3] ?? "stone");
+				$nbt->setString("brushPattern", ArgumentParser::parseBool(false, $args[4] ?? null) ? "gravity(" . ($args[3] ?? "stone") . ")" : $args[3] ?? "stone");
+				break;
+			case BrushHandler::BRUSH_PASTE:
+				$nbt->setByte("isInsert", ArgumentParser::parseBool(false, $args[1] ?? null) ? 1 : 0);
 		}
 		$item = VanillaItems::WOODEN_SHOVEL()->setNamedTag($nbt);
 		$lore = [];
@@ -70,6 +82,6 @@ class BrushCommand extends EasyEditCommand
 
 	public function getCompactHelp(): string
 	{
-		return "//brush sphere [radius] [pattern] - Create a spherical brush\n//brush smooth [radius] - Create a smoothing brush\n//brush naturalize [radius] [topBlock] [middleBlock] [bottomBlock] - Create a naturalizing brush\n//brush cylinder [radius] [height] [pattern] - Create a cylindrical brush";
+		return "//brush sphere [radius] [pattern] [gravity] - Create a spherical brush\n//brush smooth [radius] - Create a smoothing brush\n//brush naturalize [radius] [topBlock] [middleBlock] [bottomBlock] - Create a naturalizing brush\n//brush cylinder [radius] [height] [pattern] [gravity] - Create a cylindrical brush\n//brush paste [insert] - Create a paste brush";
 	}
 }

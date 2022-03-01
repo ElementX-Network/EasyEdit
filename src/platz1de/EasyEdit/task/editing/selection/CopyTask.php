@@ -5,6 +5,7 @@ namespace platz1de\EasyEdit\task\editing\selection;
 use platz1de\EasyEdit\Messages;
 use platz1de\EasyEdit\selection\BlockListSelection;
 use platz1de\EasyEdit\selection\DynamicBlockListSelection;
+use platz1de\EasyEdit\selection\identifier\StoredSelectionIdentifier;
 use platz1de\EasyEdit\selection\Selection;
 use platz1de\EasyEdit\selection\SelectionContext;
 use platz1de\EasyEdit\task\editing\EditTask;
@@ -16,7 +17,6 @@ use platz1de\EasyEdit\thread\output\MessageSendData;
 use platz1de\EasyEdit\utils\AdditionalDataManager;
 use platz1de\EasyEdit\utils\MixedUtils;
 use pocketmine\math\Vector3;
-use pocketmine\world\Position;
 
 class CopyTask extends SelectionEditTask
 {
@@ -38,11 +38,11 @@ class CopyTask extends SelectionEditTask
 
 	/**
 	 * @param Selection $selection
-	 * @param Position  $place
+	 * @param Vector3   $place
 	 */
-	public static function queue(Selection $selection, Position $place): void
+	public static function queue(Selection $selection, Vector3 $place): void
 	{
-		TaskInputData::fromTask(self::from($selection->getPlayer(), $selection->getWorldName(), new AdditionalDataManager(false, true), $selection, $place->asVector3(), $selection->getPos1()->multiply(-1)));
+		TaskInputData::fromTask(self::from($selection->getPlayer(), $selection->getWorldName(), new AdditionalDataManager(false, true), $selection, $place, $selection->getPos1()->multiply(-1)));
 	}
 
 	/**
@@ -76,7 +76,7 @@ class CopyTask extends SelectionEditTask
 	public function executeEdit(EditTaskHandler $handler): void
 	{
 		if (!$this->getDataManager()->hasResultHandler()) {
-			$this->getDataManager()->setResultHandler(static function (EditTask $task, int $changeId): void {
+			$this->getDataManager()->setResultHandler(static function (EditTask $task, ?StoredSelectionIdentifier $changeId): void {
 				ClipboardCacheData::from($task->getOwner(), $changeId);
 				CopyTask::notifyUser($task->getOwner(), (string) round(EditTaskResultCache::getTime(), 2), MixedUtils::humanReadable(EditTaskResultCache::getChanged()), $task->getDataManager());
 			});

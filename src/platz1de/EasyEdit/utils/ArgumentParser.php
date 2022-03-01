@@ -2,6 +2,8 @@
 
 namespace platz1de\EasyEdit\utils;
 
+use platz1de\EasyEdit\command\EasyEditCommand;
+use platz1de\EasyEdit\command\exception\InvalidUsageException;
 use platz1de\EasyEdit\command\exception\NoClipboardException;
 use platz1de\EasyEdit\command\exception\NoSelectionException;
 use platz1de\EasyEdit\command\exception\PatternParseException;
@@ -11,6 +13,7 @@ use platz1de\EasyEdit\pattern\parser\PatternParser;
 use platz1de\EasyEdit\pattern\Pattern;
 use platz1de\EasyEdit\selection\ClipBoardManager;
 use platz1de\EasyEdit\selection\Cube;
+use platz1de\EasyEdit\selection\identifier\StoredSelectionIdentifier;
 use platz1de\EasyEdit\selection\Selection;
 use platz1de\EasyEdit\selection\SelectionManager;
 use pocketmine\math\Facing;
@@ -57,6 +60,19 @@ class ArgumentParser
 	}
 
 	/**
+	 * @param Player      $player
+	 * @param string|null $args
+	 * @return Vector3
+	 */
+	public static function parseRelativePosition(Player $player, string $args = null): Vector3
+	{
+		return match ($args) {
+			"center", "c", "middle" => self::getSelection($player)->getBottomCenter(),
+			default => $player->getPosition()
+		};
+	}
+
+	/**
 	 * @param Player $player
 	 * @return Selection
 	 */
@@ -88,9 +104,9 @@ class ArgumentParser
 
 	/**
 	 * @param Player $player
-	 * @return int
+	 * @return StoredSelectionIdentifier
 	 */
-	public static function getClipboard(Player $player): int
+	public static function getClipboard(Player $player): StoredSelectionIdentifier
 	{
 		try {
 			$clipboard = ClipBoardManager::getFromPlayer($player->getName());
@@ -102,7 +118,7 @@ class ArgumentParser
 
 	/**
 	 * @param Player      $player
-	 * @param array       $args
+	 * @param string[]    $args
 	 * @param int         $start
 	 * @param string|null $default
 	 * @return Pattern
@@ -120,19 +136,19 @@ class ArgumentParser
 	 * @param Player      $player
 	 * @param string|null $args1
 	 * @param string|null $args2
-	 * @param float|null  $amount
+	 * @param int|null    $amount
 	 * @return Vector3
 	 */
-	public static function parseDirectionVector(Player $player, string $args1 = null, string $args2 = null, float &$amount = null): Vector3
+	public static function parseDirectionVector(Player $player, string $args1 = null, string $args2 = null, int &$amount = null): Vector3
 	{
-		$amount = 1.0;
+		$amount = 1;
 		if (is_numeric($args1)) {
-			$amount = (float) $args1;
+			$amount = (int) $args1;
 			$direction = $args2;
 		} else {
 			$direction = $args1;
 			if (is_numeric($args2)) {
-				$amount = (float) $args2;
+				$amount = (int) $args2;
 			}
 		}
 		return Vector3::zero()->getSide(self::parseFacing($player, $direction), $amount);
@@ -153,6 +169,32 @@ class ArgumentParser
 			"up", "u" => Facing::UP,
 			"down", "d" => Facing::DOWN,
 			default => VectorUtils::getFacing($player->getLocation())
+		};
+	}
+
+	/**
+	 * @param string[]        $args
+	 * @param int             $count
+	 * @param EasyEditCommand $command
+	 */
+	public static function requireArgumentCount(array $args, int $count, EasyEditCommand $command): void
+	{
+		if (count($args) < $count) {
+			throw new InvalidUsageException($command);
+		}
+	}
+
+	/**
+	 * @param bool        $default
+	 * @param string|null $argument
+	 * @return bool
+	 */
+	public static function parseBool(bool $default, string $argument = null): bool
+	{
+		return match ($argument) {
+			"true", "t", "yes", "y", "1", "+" => true,
+			"false", "f", "no", "n", "0", "-" => false,
+			default => $default
 		};
 	}
 }

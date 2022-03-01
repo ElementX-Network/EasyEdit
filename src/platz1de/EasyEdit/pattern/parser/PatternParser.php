@@ -14,6 +14,8 @@ use platz1de\EasyEdit\pattern\logic\relation\AbovePattern;
 use platz1de\EasyEdit\pattern\logic\relation\AroundPattern;
 use platz1de\EasyEdit\pattern\logic\relation\BelowPattern;
 use platz1de\EasyEdit\pattern\logic\relation\BlockPattern;
+use platz1de\EasyEdit\pattern\logic\relation\EmbedPattern;
+use platz1de\EasyEdit\pattern\logic\relation\HorizontalPattern;
 use platz1de\EasyEdit\pattern\logic\selection\CenterPattern;
 use platz1de\EasyEdit\pattern\logic\selection\SidesPattern;
 use platz1de\EasyEdit\pattern\logic\selection\WallPattern;
@@ -86,7 +88,7 @@ class PatternParser
 				$pieces[] = self::parsePiece($piece);
 			}
 		} catch (ParseError $exception) {
-			throw new ParseError('Failed to parse piece "' . $pattern .  '"' . PHP_EOL . " - " . $exception->getMessage(), false);
+			throw new ParseError('Failed to parse piece "' . $pattern . '"' . PHP_EOL . " - " . $exception->getMessage(), false);
 		}
 		return PatternConstruct::from($pieces);
 	}
@@ -102,7 +104,7 @@ class PatternParser
 		$weight = $weightData[1] ?? 100;
 		$patternString = $weightData[2];
 
-		if ($patternString === null) {
+		if ($patternString === "") {
 			throw new ParseError("No pattern given");
 		}
 
@@ -151,11 +153,13 @@ class PatternParser
 			"above" => AbovePattern::from($children, PatternArgumentData::fromBlockType($args[0] ?? "")),
 			"below" => BelowPattern::from($children, PatternArgumentData::fromBlockType($args[0] ?? "")),
 			"around" => AroundPattern::from($children, PatternArgumentData::fromBlockType($args[0] ?? "")),
+			"horizontal", "horizon" => HorizontalPattern::from($children, PatternArgumentData::fromBlockType($args[0] ?? "")),
 			"nat", "naturalized" => NaturalizePattern::from($children),
 			"walls", "wall" => WallPattern::from($children, PatternArgumentData::create()->setFloat("thickness", (float) ($args[0] ?? 1.0))),
 			"sides", "side" => SidesPattern::from($children, PatternArgumentData::create()->setFloat("thickness", (float) ($args[0] ?? 1.0))),
 			"center", "middle" => CenterPattern::from($children),
 			"gravity" => GravityPattern::from($children),
+			"embed", "embeded" => EmbedPattern::from($children, PatternArgumentData::fromBlockType($args[0] ?? "")),
 			default => throw new ParseError("Unknown Pattern " . $pattern, true)
 		};
 	}
