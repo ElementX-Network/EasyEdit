@@ -2,9 +2,12 @@
 
 namespace platz1de\EasyEdit\utils;
 
+use platz1de\EasyEdit\convert\BlockRotationManipulator;
+use platz1de\EasyEdit\convert\BlockStateConvertor;
+use platz1de\EasyEdit\convert\ItemConvertor;
+use platz1de\EasyEdit\convert\LegacyBlockIdConvertor;
 use platz1de\EasyEdit\EasyEdit;
 use platz1de\EasyEdit\listener\RemapEventListener;
-use platz1de\EasyEdit\schematic\BlockConvertor;
 use platz1de\EasyEdit\thread\input\ConfigInputData;
 use platz1de\EasyEdit\world\HeightMapCache;
 use pocketmine\utils\AssumptionFailedError;
@@ -13,7 +16,7 @@ use UnexpectedValueException;
 
 class ConfigManager
 {
-	private const CONFIG_VERSION = "2.0.5";
+	private const CONFIG_VERSION = "2.0.7";
 
 	/**
 	 * @var int[]
@@ -21,6 +24,7 @@ class ConfigManager
 	private static array $terrainIgnored = [];
 	private static float $toolCooldown;
 	private static bool $allowOtherHistory;
+	private static bool $allowUnregisteredBlocks;
 	private static int $fastSetMax;
 	private static int $pathfindingMax;
 	private static int $fillDistance;
@@ -31,6 +35,7 @@ class ConfigManager
 	private static string $rotationDataSource;
 	private static string $flipDataSource;
 	private static string $tileDataStatesSource;
+	private static string $javaTileStatesSource;
 
 	public static function load(): void
 	{
@@ -43,6 +48,7 @@ class ConfigManager
 		self::$toolCooldown = self::mustGetFloat($config, "tool-cooldown", 0.5);
 
 		self::$allowOtherHistory = self::mustGetBool($config, "allow-history-other", true);
+		self::$allowUnregisteredBlocks = self::mustGetBool($config, "allow-unregistered-blocks", false);
 
 		self::$fastSetMax = self::mustGetInt($config, "fast-set-max", 256000);
 		self::$pathfindingMax = self::mustGetInt($config, "pathfinding-max", 1000000);
@@ -60,6 +66,7 @@ class ConfigManager
 		self::$rotationDataSource = self::mustGetString($config, "rotation-data", "");
 		self::$flipDataSource = self::mustGetString($config, "flip-data", "");
 		self::$tileDataStatesSource = self::mustGetString($config, "tile-data-states", "");
+		self::$javaTileStatesSource = self::mustGetString($config, "java-tile-states", "");
 
 		ConfigInputData::create();
 	}
@@ -160,6 +167,14 @@ class ConfigManager
 		return self::$allowOtherHistory;
 	}
 
+	/**
+	 * @return bool
+	 */
+	public static function isAllowingUnregisteredBlocks(): bool
+	{
+		return self::$allowUnregisteredBlocks;
+	}
+
 	public static function getFastSetMax(): int
 	{
 		return self::$fastSetMax;
@@ -206,6 +221,7 @@ class ConfigManager
 		$stream->putString(self::$rotationDataSource);
 		$stream->putString(self::$flipDataSource);
 		$stream->putString(self::$tileDataStatesSource);
+		$stream->putString(self::$javaTileStatesSource);
 		$stream->putBool(self::$sendDebug);
 	}
 
@@ -224,13 +240,17 @@ class ConfigManager
 		self::$rotationDataSource = $stream->getString();
 		self::$flipDataSource = $stream->getString();
 		self::$tileDataStatesSource = $stream->getString();
+		self::$javaTileStatesSource = $stream->getString();
 		self::$sendDebug = $stream->getBool();
 	}
 
 	public static function distributeData(): void
 	{
 		HeightMapCache::setIgnore(self::$terrainIgnored);
-		BlockConvertor::load(self::$bedrockConversionDataSource, self::$bedrockPaletteDataSource, self::$javaPaletteDataSource, self::$rotationDataSource, self::$flipDataSource, self::$tileDataStatesSource);
+		LegacyBlockIdConvertor::load(self::$bedrockConversionDataSource);
+		BlockStateConvertor::load(self::$bedrockPaletteDataSource, self::$javaPaletteDataSource, self::$tileDataStatesSource, self::$javaTileStatesSource);
+		BlockRotationManipulator::load(self::$rotationDataSource, self::$flipDataSource);
+		ItemConvertor::load();
 	}
 
 	private static function loadConfig(): Config

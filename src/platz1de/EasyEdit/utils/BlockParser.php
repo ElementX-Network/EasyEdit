@@ -47,15 +47,38 @@ class BlockParser
 	}
 
 	/**
-	 * @param string $stringId Id in format id:meta
-	 * @return array{int, int} id, meta
+	 * @param string $string
+	 * @return int
 	 */
-	public static function fromStringId(string $stringId): array
+	public static function parseBlockIdentifier(string $string): int
+	{
+		if (!ConfigManager::isAllowingUnregisteredBlocks()) {
+			return self::getBlock($string)->getFullId(); //Use regular block parser
+		}
+		if (is_numeric($string)) {
+			return ((int) $string) << Block::INTERNAL_METADATA_BITS;
+		}
+		if (preg_match("/(.*):(.*)/", $string, $matches) && is_numeric($matches[1]) && is_numeric($matches[2])) {
+			return ((int) $matches[1] << Block::INTERNAL_METADATA_BITS) | (int) $matches[2];
+		}
+
+		//Also accept prefixed blocks
+		if (($item = StringToItemParser::getInstance()->parse(explode(":", str_replace([" ", "minecraft:"], ["_", ""], trim($string)))[0])) === null) {
+			throw new ParseError("Unknown Block " . $string);
+		}
+		return $item->getBlock()->getFullId();
+	}
+
+	/**
+	 * @param string $stringId Id in format id:meta
+	 * @return int fullID
+	 */
+	public static function fromStringId(string $stringId): int
 	{
 		$data = explode(":", $stringId);
 		if (!isset($data[1])) {
 			throw new ParseError("Expected string block id, got " . $stringId);
 		}
-		return [(int) $data[0], (int) $data[1]];
+		return ((int) $data[0] << Block::INTERNAL_METADATA_BITS) | (int) $data[1];
 	}
 }

@@ -41,7 +41,9 @@ use platz1de\EasyEdit\command\defaults\utility\CancelCommand;
 use platz1de\EasyEdit\command\defaults\utility\FillCommand;
 use platz1de\EasyEdit\command\defaults\utility\HelpCommand;
 use platz1de\EasyEdit\command\defaults\utility\LineCommand;
+use platz1de\EasyEdit\command\defaults\utility\PasteStatesCommand;
 use platz1de\EasyEdit\command\defaults\utility\StatusCommand;
+use platz1de\EasyEdit\command\defaults\utility\WandCommand;
 use platz1de\EasyEdit\listener\DefaultEventListener;
 use platz1de\EasyEdit\thread\EditAdapter;
 use platz1de\EasyEdit\thread\EditThread;
@@ -123,6 +125,8 @@ class EasyEdit extends PluginBase
 			new StatusCommand(),
 			new CancelCommand(),
 			new BenchmarkCommand(),
+			new PasteStatesCommand(),
+			new WandCommand()
 		]);
 
 		//Just for sending block data without using the protocol directly
