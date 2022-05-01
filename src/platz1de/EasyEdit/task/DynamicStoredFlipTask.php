@@ -17,7 +17,6 @@ use platz1de\EasyEdit\utils\TileUtils;
 use pocketmine\math\Axis;
 use pocketmine\math\Vector3;
 use pocketmine\utils\InternetException;
-use pocketmine\world\World;
 use UnexpectedValueException;
 
 class DynamicStoredFlipTask extends ExecutableTask
@@ -64,10 +63,7 @@ class DynamicStoredFlipTask extends ExecutableTask
 		}
 		$start = microtime(true);
 		$selection = StorageModule::mustGetDynamic($this->saveId);
-		$flipped = new DynamicBlockListSelection($selection->getPlayer());
-		$flipped->setPos1(new Vector3(0, World::Y_MIN, 0));
-		$flipped->setPos2(new Vector3($selection->getPos2()->getX(), $selection->getPos2()->getY(), $selection->getPos2()->getZ()));
-		$flipped->getManager()->load($flipped->getPos1(), $flipped->getPos2());
+		$flipped = new DynamicBlockListSelection($selection->getPlayer(), new Vector3($selection->getPos2()->getX(), $selection->getPos2()->getY(), $selection->getPos2()->getZ()), Vector3::zero());
 		switch ($this->axis) {
 			case Axis::X:
 				$flipped->setPoint(new Vector3(-$selection->getPos2()->getX() - $selection->getPoint()->getX(), $selection->getPoint()->getY(), $selection->getPoint()->getZ()));

@@ -16,6 +16,7 @@ use platz1de\EasyEdit\pattern\logic\relation\BelowPattern;
 use platz1de\EasyEdit\pattern\logic\relation\BlockPattern;
 use platz1de\EasyEdit\pattern\logic\relation\EmbedPattern;
 use platz1de\EasyEdit\pattern\logic\relation\HorizontalPattern;
+use platz1de\EasyEdit\pattern\block\SolidBlock;
 use platz1de\EasyEdit\pattern\logic\selection\CenterPattern;
 use platz1de\EasyEdit\pattern\logic\selection\SidesPattern;
 use platz1de\EasyEdit\pattern\logic\selection\WallPattern;
@@ -160,6 +161,7 @@ class PatternParser
 			"center", "middle" => CenterPattern::from($children),
 			"gravity" => GravityPattern::from($children),
 			"embed", "embeded" => EmbedPattern::from($children, PatternArgumentData::fromBlockType($args[0] ?? "")),
+			"solid" => BlockPattern::from($children, PatternArgumentData::create()->setBlock(SolidBlock::create())),
 			default => throw new ParseError("Unknown Pattern " . $pattern, true)
 		};
 	}
@@ -171,6 +173,10 @@ class PatternParser
 	 */
 	public static function getBlockType(string $string, ?Player $player = null): StaticBlock
 	{
+		if ($string === "solid") {
+			return SolidBlock::create();
+		}
+
 		if ($player instanceof Player && $string === "hand") {
 			return StaticBlock::fromBlock($player->getInventory()->getItemInHand()->getBlock());
 		}

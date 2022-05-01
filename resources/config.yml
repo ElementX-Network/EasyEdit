@@ -1,9 +1,17 @@
-config-version: "2.0.7" #Please don't change this manually
+config-version: "2.0.8" #Please don't change this manually
+
+#Used language
+#Available:
+# auto - Detect from pocketmine
+# eng - English
+# deu - German
+# custom - Allows to modify the language file directly
+language: auto
 
 #Tool cooldown length in seconds (defaults to half a second)
 #Used for brushes, selection axes and more
 #Lowering this might cause some unintended behavior on mobile devices
-brush-cooldown: 0.5
+tool-cooldown: 0.5
 
 #Whether to allow user with "easyedit.history.other" permission to undo/redo other people's actions
 allow-history-other: true
@@ -21,8 +29,8 @@ allow-unregistered-blocks: false
 #This is also somewhat harsh on client and network performance, so better not set this to high; default:256000
 fast-set-max: 256000
 
-#Distance to check while filling; default:200
-fill-distance: 200
+#Distance to check while filling; default:100
+fill-distance: 100
 
 #Max blocks checked when pathfinding, default: 1000000 (1M)
 pathfinding-max: 1000000

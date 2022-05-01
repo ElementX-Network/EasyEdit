@@ -2,8 +2,6 @@
 
 namespace platz1de\EasyEdit\task\editing;
 
-use BadMethodCallException;
-use platz1de\EasyEdit\pattern\block\StaticBlock;
 use platz1de\EasyEdit\selection\BlockListSelection;
 use platz1de\EasyEdit\selection\ExpandingStaticBlockListSelection;
 use platz1de\EasyEdit\task\editing\type\SettingNotifier;
@@ -12,21 +10,16 @@ use platz1de\EasyEdit\thread\input\ChunkInputData;
 use platz1de\EasyEdit\thread\input\TaskInputData;
 use platz1de\EasyEdit\utils\AdditionalDataManager;
 use platz1de\EasyEdit\utils\ConfigManager;
-use platz1de\EasyEdit\utils\ExtendedBinaryStream;
-use platz1de\EasyEdit\world\HeightMapCache;
 use pocketmine\block\Block;
-use pocketmine\block\BlockFactory;
+use pocketmine\block\BlockLegacyIds;
 use pocketmine\math\Facing;
 use pocketmine\math\Vector3;
 use pocketmine\world\World;
 use SplPriorityQueue;
 
-class FillTask extends EditTask
+class DrainTask extends EditTask
 {
 	use SettingNotifier;
-
-	private int $direction;
-	private StaticBlock $block;
 
 	private float $progress = 0; //worst case scenario
 
@@ -35,28 +28,21 @@ class FillTask extends EditTask
 	 * @param string                $world
 	 * @param AdditionalDataManager $data
 	 * @param Vector3               $start
-	 * @param int                   $direction
-	 * @param StaticBlock           $block
-	 * @return FillTask
+	 * @return DrainTask
 	 */
-	public static function from(string $owner, string $world, AdditionalDataManager $data, Vector3 $start, int $direction, StaticBlock $block): FillTask
+	public static function from(string $owner, string $world, AdditionalDataManager $data, Vector3 $start): DrainTask
 	{
-		$instance = new self($owner, $world, $data, $start);
-		$instance->direction = $direction;
-		$instance->block = $block;
-		return $instance;
+		return new self($owner, $world, $data, $start);
 	}
 
 	/**
-	 * @param string      $player
-	 * @param string      $world
-	 * @param Vector3     $start
-	 * @param int         $direction
-	 * @param StaticBlock $block
+	 * @param string  $player
+	 * @param string  $world
+	 * @param Vector3 $start
 	 */
-	public static function queue(string $player, string $world, Vector3 $start, int $direction, StaticBlock $block): void
+	public static function queue(string $player, string $world, Vector3 $start): void
 	{
-		TaskInputData::fromTask(self::from($player, $world, new AdditionalDataManager(true, true), $start, $direction, $block));
+		TaskInputData::fromTask(self::from($player, $world, new AdditionalDataManager(true, true), $start));
 	}
 
 	public function execute(): void
@@ -71,40 +57,15 @@ class FillTask extends EditTask
 
 	public function executeEdit(EditTaskHandler $handler): void
 	{
-		$ignore = HeightMapCache::getIgnore();
-		if (($k = array_search($this->block->getId(), $ignore)) !== false) {
-			unset($ignore[$k]);
-		}
+		$target = [BlockLegacyIds::FLOWING_WATER, BlockLegacyIds::STILL_WATER, BlockLegacyIds::FLOWING_LAVA, BlockLegacyIds::STILL_LAVA];
 
 		$queue = new SplPriorityQueue();
 		$scheduled = [];
 		$loadedChunks = [];
-		$id = $this->block->get();
 		$startX = $this->getPosition()->getFloorX();
 		$startY = $this->getPosition()->getFloorY();
 		$startZ = $this->getPosition()->getFloorZ();
 		$requestedChunks = [World::chunkHash($startX >> 4, $startZ >> 4) => 1];
-		$validate = match ($this->direction) {
-			Facing::DOWN => static function (Vector3 $pos) use ($startY) {
-				return $pos->getFloorY() <= $startY;
-			},
-			Facing::UP => static function (Vector3 $pos) use ($startY) {
-				return $pos->getFloorY() >= $startY;
-			},
-			Facing::NORTH => static function (Vector3 $pos) use ($startZ) {
-				return $pos->getFloorZ() <= $startZ;
-			},
-			Facing::SOUTH => static function (Vector3 $pos) use ($startZ) {
-				return $pos->getFloorZ() >= $startZ;
-			},
-			Facing::WEST => static function (Vector3 $pos) use ($startX) {
-				return $pos->getFloorX() <= $startX;
-			},
-			Facing::EAST => static function (Vector3 $pos) use ($startX) {
-				return $pos->getFloorX() >= $startX;
-			},
-			default => throw new BadMethodCallException("Invalid direction")
-		};
 		$max = ConfigManager::getFillDistance();
 
 		$queue->setExtractFlags(SplPriorityQueue::EXTR_BOTH);
@@ -125,17 +86,17 @@ class FillTask extends EditTask
 				}
 			}
 			$requestedChunks[$chunk]--;
-			if (!in_array($handler->getResultingBlock($x, $y, $z) >> Block::INTERNAL_METADATA_BITS, $ignore, true)) {
+			if (!in_array($handler->getResultingBlock($x, $y, $z) >> Block::INTERNAL_METADATA_BITS, $target, true)) {
 				if ($requestedChunks[$chunk] <= 0) {
 					unset($requestedChunks[$chunk], $loadedChunks[$chunk]);
 					$this->sendRuntimeChunks($handler, [$chunk]);
 				}
 				continue;
 			}
-			$handler->changeBlock($x, $y, $z, $id);
+			$handler->changeBlock($x, $y, $z, 0);
 			foreach (Facing::ALL as $facing) {
 				$side = (new Vector3($x, $y, $z))->getSide($facing);
-				if ($validate($side) && !isset($scheduled[$hash = World::blockHash($side->getFloorX(), $side->getFloorY(), $side->getFloorZ())])) {
+				if (!isset($scheduled[$hash = World::blockHash($side->getFloorX(), $side->getFloorY(), $side->getFloorZ())])) {
 					$scheduled[$hash] = true;
 					if (!isset($requestedChunks[$h = World::chunkHash($side->getFloorX() >> 4, $side->getFloorZ() >> 4)])) {
 						$requestedChunks[$h] = 0;
@@ -164,19 +125,5 @@ class FillTask extends EditTask
 	public function getProgress(): float
 	{
 		return $this->progress; //Unknown
-	}
-
-	public function putData(ExtendedBinaryStream $stream): void
-	{
-		parent::putData($stream);
-		$stream->putByte($this->direction);
-		$stream->putInt($this->block->get());
-	}
-
-	public function parseData(ExtendedBinaryStream $stream): void
-	{
-		parent::parseData($stream);
-		$this->direction = $stream->getByte();
-		$this->block = StaticBlock::fromBlock(BlockFactory::getInstance()->fromFullBlock($stream->getInt()));
 	}
 }

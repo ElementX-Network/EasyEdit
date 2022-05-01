@@ -29,7 +29,7 @@ abstract class Selection
 	 * @param Vector3|null $pos2
 	 * @param bool         $piece
 	 */
-	public function __construct(string $player, string $world = "", ?Vector3 $pos1 = null, ?Vector3 $pos2 = null, bool $piece = false)
+	public function __construct(string $player, string $world, ?Vector3 $pos1, ?Vector3 $pos2, bool $piece = false)
 	{
 		$this->world = $world;
 
@@ -241,8 +241,7 @@ abstract class Selection
 	public function fastSerialize(): string
 	{
 		$stream = new ExtendedBinaryStream();
-		$stream->putString(static::class);
-		$stream->putString($this->player);
+		$stream->putString(igbinary_serialize($this));
 		$this->putData($stream);
 		return $stream->getBuffer();
 	}
@@ -254,10 +253,20 @@ abstract class Selection
 	public static function fastDeserialize(string $data): Selection
 	{
 		$stream = new ExtendedBinaryStream($data);
-		$type = $stream->getString();
 		/** @var Selection $selection */
-		$selection = new $type($stream->getString());
+		$selection = igbinary_unserialize($stream->getString());
 		$selection->parseData($stream);
 		return $selection;
+	}
+
+	public function __serialize(): array
+	{
+		return [$this->player];
+	}
+
+	public function __unserialize(array $data): void
+	{
+		$this->player = $data[0];
+		$this->piece = false;
 	}
 }

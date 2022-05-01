@@ -9,11 +9,11 @@ use pocketmine\nbt\tag\CompoundTag;
 use pocketmine\player\Player;
 use pocketmine\utils\TextFormat;
 
-class BlockInfoCommand extends EasyEditCommand
+class BuilderRodCommand extends EasyEditCommand
 {
 	public function __construct()
 	{
-		parent::__construct("/blockinfo", [KnownPermissions::PERMISSION_UTIL], ["/bi"]);
+		parent::__construct("/builderrod", [KnownPermissions::PERMISSION_ROD], ["/rod", "/builderwand"]);
 	}
 
 	/**
@@ -22,7 +22,7 @@ class BlockInfoCommand extends EasyEditCommand
 	 */
 	public function process(Player $player, array $args): void
 	{
-		$item = VanillaItems::STICK()->setNamedTag(CompoundTag::create()->setByte("isInfoStick", 1))->setCustomName(TextFormat::YELLOW . "InfoStick");
+		$item = VanillaItems::BLAZE_ROD()->setNamedTag(CompoundTag::create()->setByte("isBuilderRod", 1))->setCustomName(TextFormat::GOLD . "BuilderRod");
 		$player->getInventory()->setItem($player->getInventory()->getHeldItemIndex(), $item);
 	}
 }

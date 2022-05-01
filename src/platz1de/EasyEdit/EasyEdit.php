@@ -25,6 +25,7 @@ use platz1de\EasyEdit\command\defaults\selection\ExtinguishCommand;
 use platz1de\EasyEdit\command\defaults\selection\FirstPositionCommand;
 use platz1de\EasyEdit\command\defaults\selection\MoveCommand;
 use platz1de\EasyEdit\command\defaults\selection\NaturalizeCommand;
+use platz1de\EasyEdit\command\defaults\selection\OverlayCommand;
 use platz1de\EasyEdit\command\defaults\selection\ReplaceCommand;
 use platz1de\EasyEdit\command\defaults\selection\SecondPositionCommand;
 use platz1de\EasyEdit\command\defaults\selection\SetCommand;
@@ -37,7 +38,9 @@ use platz1de\EasyEdit\command\defaults\selection\WallCommand;
 use platz1de\EasyEdit\command\defaults\utility\BenchmarkCommand;
 use platz1de\EasyEdit\command\defaults\utility\BlockInfoCommand;
 use platz1de\EasyEdit\command\defaults\utility\BrushCommand;
+use platz1de\EasyEdit\command\defaults\utility\BuilderRodCommand;
 use platz1de\EasyEdit\command\defaults\utility\CancelCommand;
+use platz1de\EasyEdit\command\defaults\utility\DrainCommand;
 use platz1de\EasyEdit\command\defaults\utility\FillCommand;
 use platz1de\EasyEdit\command\defaults\utility\HelpCommand;
 use platz1de\EasyEdit\command\defaults\utility\LineCommand;
@@ -69,7 +72,6 @@ class EasyEdit extends PluginBase
 		$thread = new EditThread(Server::getInstance()->getLogger());
 		$thread->start(PTHREADS_INHERIT_INI | PTHREADS_INHERIT_CONSTANTS);
 
-		Messages::load();
 		ConfigManager::load();
 
 		$this->getScheduler()->scheduleRepeatingTask(new EditAdapter(), 1);
@@ -83,6 +85,7 @@ class EasyEdit extends PluginBase
 			new ExtendCommand(),
 			new SetCommand(),
 			new ReplaceCommand(),
+			new OverlayCommand(),
 			new NaturalizeCommand(),
 			new SmoothCommand(),
 			new CenterCommand(),
@@ -120,8 +123,10 @@ class EasyEdit extends PluginBase
 			new HelpCommand(),
 			new BrushCommand(),
 			new FillCommand(),
+			new DrainCommand(),
 			new LineCommand(),
 			new BlockInfoCommand(),
+			new BuilderRodCommand(),
 			new StatusCommand(),
 			new CancelCommand(),
 			new BenchmarkCommand(),

@@ -21,7 +21,7 @@ class BinaryBlockListStream extends BlockListSelection
 	 * @param string $world
 	 * @param bool   $piece
 	 */
-	public function __construct(string $player, string $world = "", bool $piece = false)
+	public function __construct(string $player, string $world, bool $piece = false)
 	{
 		parent::__construct($player, $world, Vector3::zero(), Vector3::zero(), $piece);
 		$this->blocks = new ExtendedBinaryStream();
@@ -144,5 +144,15 @@ class BinaryBlockListStream extends BlockListSelection
 			$current->addBlock($x, $y, $z, $id);
 		}
 		return $pieces;
+	}
+
+	public function createSafeClone(): BinaryBlockListStream
+	{
+		$clone = new self($this->getPlayer(), $this->getWorldName());
+		$clone->setData($this->getData());
+		foreach ($this->getTiles() as $tile) {
+			$this->addTile($tile);
+		}
+		return $clone;
 	}
 }

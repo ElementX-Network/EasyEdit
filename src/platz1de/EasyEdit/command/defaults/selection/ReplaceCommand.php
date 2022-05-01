@@ -3,6 +3,7 @@
 namespace platz1de\EasyEdit\command\defaults\selection;
 
 use platz1de\EasyEdit\command\exception\PatternParseException;
+use platz1de\EasyEdit\pattern\block\SolidBlock;
 use platz1de\EasyEdit\pattern\logic\relation\BlockPattern;
 use platz1de\EasyEdit\pattern\parser\ParseError;
 use platz1de\EasyEdit\pattern\parser\PatternParser;
@@ -15,7 +16,7 @@ class ReplaceCommand extends AliasedPatternCommand
 {
 	public function __construct()
 	{
-		parent::__construct("/replace", "Replace the selected Area", "//replace <block> <pattern>");
+		parent::__construct("/replace");
 	}
 
 	/**
@@ -25,12 +26,15 @@ class ReplaceCommand extends AliasedPatternCommand
 	 */
 	public function parsePattern(Player $player, array $args): Pattern
 	{
-		ArgumentParser::requireArgumentCount($args, 2, $this);
-		try {
-			$block = PatternParser::getBlockType($args[0]);
-		} catch (ParseError $exception) {
-			throw new PatternParseException($exception);
+		ArgumentParser::requireArgumentCount($args, 1, $this);
+		if(count($args) >= 2){
+			try {
+				$block = PatternParser::getBlockType($args[0]);
+			} catch (ParseError $exception) {
+				throw new PatternParseException($exception);
+			}
+			return BlockPattern::from([ArgumentParser::parseCombinedPattern($player, $args, 1)], PatternArgumentData::create()->setBlock($block));
 		}
-		return BlockPattern::from([ArgumentParser::parseCombinedPattern($player, $args, 1)], PatternArgumentData::create()->setBlock($block));
+		return BlockPattern::from([ArgumentParser::parseCombinedPattern($player, $args, 0)], PatternArgumentData::create()->setBlock(SolidBlock::create()));
 	}
 }
