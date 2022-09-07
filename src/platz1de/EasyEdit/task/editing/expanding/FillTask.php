@@ -1,14 +1,11 @@
 <?php
 
-namespace platz1de\EasyEdit\task\editing;
+namespace platz1de\EasyEdit\task\editing\expanding;
 
 use BadMethodCallException;
 use platz1de\EasyEdit\pattern\block\StaticBlock;
-use platz1de\EasyEdit\selection\BlockListSelection;
-use platz1de\EasyEdit\selection\ExpandingStaticBlockListSelection;
+use platz1de\EasyEdit\task\editing\EditTaskHandler;
 use platz1de\EasyEdit\task\editing\type\SettingNotifier;
-use platz1de\EasyEdit\thread\ChunkCollector;
-use platz1de\EasyEdit\thread\input\ChunkInputData;
 use platz1de\EasyEdit\thread\input\TaskInputData;
 use platz1de\EasyEdit\utils\AdditionalDataManager;
 use platz1de\EasyEdit\utils\ConfigManager;
@@ -21,14 +18,12 @@ use pocketmine\math\Vector3;
 use pocketmine\world\World;
 use SplPriorityQueue;
 
-class FillTask extends EditTask
+class FillTask extends ExpandingTask
 {
 	use SettingNotifier;
 
 	private int $direction;
 	private StaticBlock $block;
-
-	private float $progress = 0; //worst case scenario
 
 	/**
 	 * @param string                $owner
@@ -59,31 +54,20 @@ class FillTask extends EditTask
 		TaskInputData::fromTask(self::from($player, $world, new AdditionalDataManager(true, true), $start, $direction, $block));
 	}
 
-	public function execute(): void
-	{
-		$this->getDataManager()->useFastSet();
-		$this->getDataManager()->setFinal();
-		ChunkCollector::init($this->getWorld());
-		ChunkCollector::collectInput(ChunkInputData::empty());
-		$this->run();
-		ChunkCollector::clear();
-	}
-
 	public function executeEdit(EditTaskHandler $handler): void
 	{
 		$ignore = HeightMapCache::getIgnore();
-		if (($k = array_search($this->block->getId(), $ignore)) !== false) {
+		if (($k = array_search($this->block->getId(), $ignore, true)) !== false) {
 			unset($ignore[$k]);
 		}
 
 		$queue = new SplPriorityQueue();
 		$scheduled = [];
-		$loadedChunks = [];
 		$id = $this->block->get();
 		$startX = $this->getPosition()->getFloorX();
 		$startY = $this->getPosition()->getFloorY();
 		$startZ = $this->getPosition()->getFloorZ();
-		$requestedChunks = [World::chunkHash($startX >> 4, $startZ >> 4) => 1];
+		$this->registerRequestedChunks(World::chunkHash($startX >> 4, $startZ >> 4));
 		$validate = match ($this->direction) {
 			Facing::DOWN => static function (Vector3 $pos) use ($startY) {
 				return $pos->getFloorY() <= $startY;
@@ -107,6 +91,10 @@ class FillTask extends EditTask
 		};
 		$max = ConfigManager::getFillDistance();
 
+		if (!$this->checkRuntimeChunk($handler, World::chunkHash($startX, $startZ), 0, 1)) {
+			return;
+		}
+
 		$queue->setExtractFlags(SplPriorityQueue::EXTR_BOTH);
 		$queue->insert(World::blockHash($startX, $startY, $startZ), 0);
 		while (!$queue->isEmpty()) {
@@ -117,19 +105,11 @@ class FillTask extends EditTask
 			}
 			World::getBlockXYZ($current["data"], $x, $y, $z);
 			$chunk = World::chunkHash($x >> 4, $z >> 4);
-			if (!isset($loadedChunks[$chunk])) {
-				$loadedChunks[$chunk] = true;
-				$this->progress = -$current["priority"] / $max;
-				if (!$this->requestRuntimeChunks($handler, [$chunk])) {
-					return;
-				}
+			if (!$this->checkRuntimeChunk($handler, $chunk, -$current["priority"], $max)) {
+				return;
 			}
-			$requestedChunks[$chunk]--;
 			if (!in_array($handler->getResultingBlock($x, $y, $z) >> Block::INTERNAL_METADATA_BITS, $ignore, true)) {
-				if ($requestedChunks[$chunk] <= 0) {
-					unset($requestedChunks[$chunk], $loadedChunks[$chunk]);
-					$this->sendRuntimeChunks($handler, [$chunk]);
-				}
+				$this->checkUnload($handler, $chunk);
 				continue;
 			}
 			$handler->changeBlock($x, $y, $z, $id);
@@ -137,33 +117,17 @@ class FillTask extends EditTask
 				$side = (new Vector3($x, $y, $z))->getSide($facing);
 				if ($validate($side) && !isset($scheduled[$hash = World::blockHash($side->getFloorX(), $side->getFloorY(), $side->getFloorZ())])) {
 					$scheduled[$hash] = true;
-					if (!isset($requestedChunks[$h = World::chunkHash($side->getFloorX() >> 4, $side->getFloorZ() >> 4)])) {
-						$requestedChunks[$h] = 0;
-					}
-					$requestedChunks[$h]++;
+					$this->registerRequestedChunks(World::chunkHash($side->getFloorX() >> 4, $side->getFloorZ() >> 4));
 					$queue->insert($hash, $facing === Facing::DOWN || $facing === Facing::UP ? $current["priority"] : $current["priority"] - 1);
 				}
 			}
-			if ($requestedChunks[$chunk] <= 0) {
-				unset($requestedChunks[$chunk], $loadedChunks[$chunk]);
-				$this->sendRuntimeChunks($handler, [$chunk]);
-			}
+			$this->checkUnload($handler, $chunk);
 		}
-	}
-
-	public function getUndoBlockList(): BlockListSelection
-	{
-		return new ExpandingStaticBlockListSelection($this->getOwner(), $this->getWorld(), $this->getPosition());
 	}
 
 	public function getTaskName(): string
 	{
 		return "fill";
-	}
-
-	public function getProgress(): float
-	{
-		return $this->progress; //Unknown
 	}
 
 	public function putData(ExtendedBinaryStream $stream): void
@@ -177,6 +141,6 @@ class FillTask extends EditTask
 	{
 		parent::parseData($stream);
 		$this->direction = $stream->getByte();
-		$this->block = StaticBlock::fromBlock(BlockFactory::getInstance()->fromFullBlock($stream->getInt()));
+		$this->block = new StaticBlock($stream->getInt());
 	}
 }

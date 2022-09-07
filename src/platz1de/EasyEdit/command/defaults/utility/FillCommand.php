@@ -7,7 +7,7 @@ use platz1de\EasyEdit\command\exception\PatternParseException;
 use platz1de\EasyEdit\command\KnownPermissions;
 use platz1de\EasyEdit\pattern\block\StaticBlock;
 use platz1de\EasyEdit\pattern\parser\ParseError;
-use platz1de\EasyEdit\task\editing\FillTask;
+use platz1de\EasyEdit\task\editing\expanding\FillTask;
 use platz1de\EasyEdit\utils\ArgumentParser;
 use platz1de\EasyEdit\utils\BlockParser;
 use pocketmine\player\Player;
@@ -27,7 +27,7 @@ class FillCommand extends EasyEditCommand
 	{
 		ArgumentParser::requireArgumentCount($args, 1, $this);
 		try {
-			$block = StaticBlock::fromFullId(BlockParser::parseBlockIdentifier($args[0]));
+			$block = new StaticBlock(BlockParser::parseBlockIdentifier($args[0]));
 		} catch (ParseError $exception) {
 			throw new PatternParseException($exception);
 		}

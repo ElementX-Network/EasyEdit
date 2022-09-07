@@ -11,7 +11,6 @@ use platz1de\EasyEdit\thread\input\TaskInputData;
 use platz1de\EasyEdit\utils\AdditionalDataManager;
 use platz1de\EasyEdit\utils\ExtendedBinaryStream;
 use pocketmine\block\Block;
-use pocketmine\block\BlockFactory;
 use pocketmine\math\Vector3;
 use pocketmine\math\VoxelRayTrace;
 use pocketmine\world\World;
@@ -121,6 +120,6 @@ class LineTask extends EditTask
 	{
 		parent::parseData($stream);
 		$this->end = $stream->getVector();
-		$this->block = StaticBlock::fromBlock(BlockFactory::getInstance()->fromFullBlock($stream->getInt()));
+		$this->block = new StaticBlock($stream->getInt());
 	}
 }

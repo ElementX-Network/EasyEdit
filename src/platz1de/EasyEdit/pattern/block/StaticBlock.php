@@ -2,30 +2,46 @@
 
 namespace platz1de\EasyEdit\pattern\block;
 
-use platz1de\EasyEdit\pattern\parser\WrongPatternUsageException;
-use platz1de\EasyEdit\pattern\Pattern;
-use platz1de\EasyEdit\pattern\PatternArgumentData;
 use platz1de\EasyEdit\selection\Selection;
 use platz1de\EasyEdit\selection\SelectionContext;
-use platz1de\EasyEdit\world\SafeSubChunkExplorer;
+use platz1de\EasyEdit\utils\ExtendedBinaryStream;
+use platz1de\EasyEdit\world\ChunkController;
 use pocketmine\block\Block;
-use pocketmine\utils\AssumptionFailedError;
-use Throwable;
 
-class StaticBlock extends Pattern
+class StaticBlock extends BlockType
 {
+	private int $id;
+
 	/**
-	 * @param int                  $x
-	 * @param int                  $y
-	 * @param int                  $z
-	 * @param SafeSubChunkExplorer $iterator
-	 * @param Selection            $current
-	 * @param Selection            $total
+	 * @param int $id
+	 */
+	public function __construct(int $id)
+	{
+		parent::__construct();
+		$this->id = $id;
+	}
+
+	/**
+	 * @param Block $block
+	 * @return StaticBlock
+	 */
+	public static function from(Block $block): StaticBlock
+	{
+		return new self($block->getFullId());
+	}
+
+	/**
+	 * @param int             $x
+	 * @param int             $y
+	 * @param int             $z
+	 * @param ChunkController $iterator
+	 * @param Selection       $current
+	 * @param Selection       $total
 	 * @return int
 	 */
-	public function getFor(int $x, int &$y, int $z, SafeSubChunkExplorer $iterator, Selection $current, Selection $total): int
+	public function getFor(int $x, int &$y, int $z, ChunkController $iterator, Selection $current, Selection $total): int
 	{
-		return $this->args->getRealBlock();
+		return $this->id;
 	}
 
 	/**
@@ -33,7 +49,7 @@ class StaticBlock extends Pattern
 	 */
 	public function get(): int
 	{
-		return $this->args->getRealBlock();
+		return $this->id;
 	}
 
 	/**
@@ -41,7 +57,7 @@ class StaticBlock extends Pattern
 	 */
 	public function getId(): int
 	{
-		return $this->args->getRealBlock() >> Block::INTERNAL_METADATA_BITS;
+		return $this->id >> Block::INTERNAL_METADATA_BITS;
 	}
 
 	/**
@@ -49,43 +65,7 @@ class StaticBlock extends Pattern
 	 */
 	public function getMeta(): int
 	{
-		return $this->args->getRealBlock() & Block::INTERNAL_METADATA_MASK;
-	}
-
-	public function check(): void
-	{
-		try {
-			//shut up phpstorm
-			$this->args->setRealBlock($this->args->getRealBlock());
-		} catch (Throwable) {
-			throw new WrongPatternUsageException("StaticBlock needs a block as first Argument");
-		}
-	}
-
-	/**
-	 * @param Block $block
-	 * @return StaticBlock
-	 */
-	public static function fromBlock(Block $block): StaticBlock
-	{
-		$pattern = self::from([], PatternArgumentData::create()->setRealBlock($block->getFullId()));
-		if (!$pattern instanceof self) {
-			throw new AssumptionFailedError("StaticBlock was wrapped into a parent pattern while creating instance");
-		}
-		return $pattern;
-	}
-
-	/**
-	 * @param int $block
-	 * @return StaticBlock
-	 */
-	public static function fromFullId(int $block): StaticBlock
-	{
-		$pattern = self::from([], PatternArgumentData::create()->setRealBlock($block));
-		if (!$pattern instanceof self) {
-			throw new AssumptionFailedError("StaticBlock was wrapped into a parent pattern while creating instance");
-		}
-		return $pattern;
+		return $this->id & Block::INTERNAL_METADATA_MASK;
 	}
 
 	/**
@@ -94,7 +74,7 @@ class StaticBlock extends Pattern
 	 */
 	public function equals(int $fullBlock): bool
 	{
-		return $fullBlock === $this->args->getRealBlock();
+		return $fullBlock === $this->id;
 	}
 
 	/**
@@ -103,5 +83,15 @@ class StaticBlock extends Pattern
 	public function applySelectionContext(SelectionContext $context): void
 	{
 		$context->includeWalls()->includeVerticals()->includeFilling();
+	}
+
+	public function putData(ExtendedBinaryStream $stream): void
+	{
+		$stream->putInt($this->id);
+	}
+
+	public function parseData(ExtendedBinaryStream $stream): void
+	{
+		$this->id = $stream->getInt();
 	}
 }

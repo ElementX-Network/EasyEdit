@@ -10,6 +10,7 @@ Feature-rich WorldEditor for PocketMine-MP
 - High performance:
     - async editing, allowing the server to run normally while editing in the background
     - low memory consumption by splitting your actions into multiple smaller edits
+- flicker-free editing
 - support for unique Patterns
     - set blocks in effectively infinite ways
     - see [Pattern Documentation](#Patterns)
@@ -92,7 +93,7 @@ Utility:
 | //brush cylinder \[radius] \[height] \[pattern] [gravity]              | Create a cylindrical Brush  | easyedit.brush <br> (To use: easyedit.edit)     | //br cy                                                                                   |
 | //brush paste [insert]                                                 | Create a pasting Brush      | easyedit.brush <br> (To use: easyedit.edit)     | //br paste                                                                                |                                                                                                                                                                                                                                  |                             |                                                 |                                                                                          
 | //fill \<Block> [direction]                                            | Fill an area                | easyedit.edit easyedit.generate                 | Fills into looking direction                                                              |
-| //drain                                                                | Drain an area               | easyedit.edit easyedit.generate                 | 
+| //drain                                                                | Drain an area               | easyedit.edit easyedit.generate                 |
 | //line \<x> \<y> \<z> \[pattern]                                       | Draw a line                 | easyedit.edit easyedit.generate                 |                                                                                           |
 | //blockinfo                                                            | Get a blockinfo stick       | easyedit.util                                   | //bi                                                                                      |
 | //builderrod                                                           | Get a builder rod           | easyedit.rod                                    | //rod<br>Expands the clicked blockface                                                    |
@@ -179,8 +180,9 @@ patterns - children patterns, can be separated by a comma
 | odd;\[x];\[y];\[z](patterns)                 | Executes Patterns if the block is at odd coordinates at x, y and z Axis, the x, y and z can be left out (only given ones will be checked) |
 | even;\[x];\[y];\[z](patterns)                | Executes Patterns if the block is at even coordinates (see odd for more info)                                                             |
 | divisible;\<number>;\[x];\[y];\[z](patterns) | Executes Patterns if the block is at coordinates which are divisible by the given number (see odd for more info)                          |
-| walls;\[thickness](patterns)                 | Executes Patterns if the block is one of the walls of the selections                                                                      |
-| sides;\[thickness](patterns)                 | Executes Patterns if the block is one of the sides of the selections (walls + bottom and top)                                             |
+| walls;\[thickness](patterns)                 | Executes Patterns if the block is one of the walls of the selection                                                                       |
+| sides;\[thickness](patterns)                 | Executes Patterns if the block is one of the sides of the selection (walls + bottom and top)                                              |
+| center(patterns)                             | Executes Patterns if the block is in the center of the selection                                                                          |
 | embed;\<block>(patterns)                     | Executes Patterns if the block is around a higher specified block                                                                         |
 
 ### Functional Patterns
@@ -191,10 +193,10 @@ These Patterns have a unique use and are mostly used for the default commands
 [argument] - optional Argument<br>
 patterns - children patterns, can be separated by a comma
 
-| Pattern                                      | Description                                                                       |
-|----------------------------------------------|-----------------------------------------------------------------------------------|
-| naturalize(\[pattern],\[pattern],\[pattern]) | makes your selection more natural (1 layer pattern1, 3 layers pattern2, pattern3) |
-| gravity(\[pattern])                          | makes your blocks fall down until they reach the ground                           |
+| Pattern                                      | Description                                                                                                                          |
+|----------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------|
+| naturalize(\[pattern],\[pattern],\[pattern]) | makes your selection more natural (1 layer of pattern1 (eg. grass), 3 layers of pattern2 (eg. dirt), all below pattern3 (eg. stone)) |
+| gravity(\[pattern])                          | makes your blocks fall down until they reach the ground                                                                              |
 
 ## Blame Mojang
 

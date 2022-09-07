@@ -35,10 +35,10 @@ class HeightMapCache
 	private static array $currentReverse = [];
 
 	/**
-	 * @param SafeSubChunkExplorer $iterator
-	 * @param Selection            $selection
+	 * @param ChunkController $iterator
+	 * @param Selection       $selection
 	 */
-	public static function load(SafeSubChunkExplorer $iterator, Selection $selection): void
+	public static function load(ChunkController $iterator, Selection $selection): void
 	{
 		if (!self::$loaded) {
 			$min = $selection->getCubicStart()->subtract(1, 1, 1);
@@ -47,11 +47,11 @@ class HeightMapCache
 				for ($z = $min->getFloorZ(); $z <= $max->getZ(); $z++) {
 					$y = World::Y_MAX - 1;
 					while ($y > World::Y_MIN) {
-						while ($y >= World::Y_MIN && in_array($iterator->getBlockAt($x, $y, $z) >> Block::INTERNAL_METADATA_BITS, self::$ignore, true)) {
+						while ($y >= World::Y_MIN && in_array($iterator->getBlock($x, $y, $z) >> Block::INTERNAL_METADATA_BITS, self::$ignore, true)) {
 							$y--;
 						}
 						$c = $y;
-						while ($y >= World::Y_MIN && !in_array($iterator->getBlockAt($x, $y, $z) >> Block::INTERNAL_METADATA_BITS, self::$ignore, true)) {
+						while ($y >= World::Y_MIN && !in_array($iterator->getBlock($x, $y, $z) >> Block::INTERNAL_METADATA_BITS, self::$ignore, true)) {
 							$y--;
 						}
 						self::$heightMap[$x][$z][$c] = $c - $y;
@@ -207,7 +207,7 @@ class HeightMapCache
 	public static function generateFullDepthMap(int $x, int $z): array
 	{
 		self::moveTo($x, $z);
-		$depth = array_fill(0, World::Y_MAX - World::Y_MIN, 0);
+		$depth = array_fill(World::Y_MIN, World::Y_MAX - World::Y_MIN, 0);
 		foreach (self::$current as $y => $value) {
 			for ($i = 0; $i < $value; $i++) {
 				$depth[$y - $i + 1] = min($i, $value - $i);

@@ -3,10 +3,7 @@
 namespace platz1de\EasyEdit\task\benchmark;
 
 use platz1de\EasyEdit\pattern\block\StaticBlock;
-use platz1de\EasyEdit\pattern\logic\math\EvenPattern;
-use platz1de\EasyEdit\pattern\logic\math\OddPattern;
-use platz1de\EasyEdit\pattern\PatternArgumentData;
-use platz1de\EasyEdit\pattern\PatternConstruct;
+use platz1de\EasyEdit\pattern\parser\PatternParser;
 use platz1de\EasyEdit\selection\Cube;
 use platz1de\EasyEdit\selection\identifier\StoredSelectionIdentifier;
 use platz1de\EasyEdit\task\editing\EditTask;
@@ -62,7 +59,7 @@ class BenchmarkExecutor extends ExecutableTask
 		$setData->setResultHandler(static function (EditTask $task, ?StoredSelectionIdentifier $changeId) { });
 
 		//Task #1 - set static
-		$this->setSimpleBenchmark = SetTask::from($this->world, $this->world, $setData, $testCube, $pos, Vector3::zero(), StaticBlock::fromBlock(VanillaBlocks::STONE()));
+		$this->setSimpleBenchmark = SetTask::from($this->world, $this->world, $setData, $testCube, $pos, Vector3::zero(), StaticBlock::from(VanillaBlocks::STONE()));
 		$this->setSimpleBenchmark->execute();
 		$results[] = ["set static", EditTaskResultCache::getTime(), EditTaskResultCache::getChanged()];
 		EditTaskResultCache::clear();
@@ -72,7 +69,7 @@ class BenchmarkExecutor extends ExecutableTask
 
 		//Task #2 - set complex
 		//3D-Chess Pattern with stone and dirt
-		$pattern = PatternConstruct::from([EvenPattern::from([PatternConstruct::from([EvenPattern::from([StaticBlock::fromBlock(VanillaBlocks::STONE())], PatternArgumentData::create()->useXAxis()->useZAxis()), OddPattern::from([StaticBlock::fromBlock(VanillaBlocks::STONE())], PatternArgumentData::create()->useXAxis()->useZAxis()), StaticBlock::fromBlock(VanillaBlocks::DIRT())])], PatternArgumentData::create()->useYAxis()), EvenPattern::from([StaticBlock::fromBlock(VanillaBlocks::DIRT())], PatternArgumentData::create()->useXAxis()->useZAxis()), OddPattern::from([StaticBlock::fromBlock(VanillaBlocks::DIRT())], PatternArgumentData::create()->useXAxis()->useZAxis()), StaticBlock::fromBlock(VanillaBlocks::STONE())]);
+		$pattern = PatternParser::parseInternal("even;y(even;xz(stone).odd;xz(stone).dirt).even;xz(dirt).odd;xz(dirt).stone");
 		$this->setComplexBenchmark = SetTask::from($this->world, $this->world, $complexData, $testCube, $pos, Vector3::zero(), $pattern);
 		$this->setComplexBenchmark->execute();
 		$results[] = ["set complex", EditTaskResultCache::getTime(), EditTaskResultCache::getChanged()];

@@ -10,6 +10,8 @@ use platz1de\EasyEdit\task\editing\type\SettingNotifier;
 use platz1de\EasyEdit\thread\input\TaskInputData;
 use platz1de\EasyEdit\utils\AdditionalDataManager;
 use platz1de\EasyEdit\world\HeightMapCache;
+use pocketmine\block\Block;
+use pocketmine\block\BlockLegacyIds;
 use pocketmine\math\Axis;
 use pocketmine\math\Vector3;
 use pocketmine\world\Position;
@@ -83,11 +85,11 @@ class SmoothTask extends SelectionEditTask
 				}
 				$start = -1;
 				foreach ($reference as $height => $depth) {
-					if ($depth < 4.5) {
-						$reference[$height] = 0;
+					if ($depth < -4.5) {
+						$reference[$height] = -1;
 						if ($start !== -1) {
 							for ($i = $start; $i < $height; $i++) {
-								$reference[$i] = min($i - $start + 1, $height - $i);
+								$reference[$i] = min($i - $start, $height - $i - 1);
 							}
 							$start = -1;
 						}
@@ -103,10 +105,29 @@ class SmoothTask extends SelectionEditTask
 					}
 				}
 			}
-			if (max($map[$y], 0) === $reference[$y]) {
+			if ($map[$y] === $reference[$y]) {
 				return;
 			}
 			if ($reference[$y] <= 0) {
+				if ($y < (World::Y_MAX - 1)) {
+					$b = $handler->getBlock($x, $y + 1, $z);
+					if (in_array($b >> Block::INTERNAL_METADATA_BITS, [BlockLegacyIds::FLOWING_WATER, BlockLegacyIds::STILL_WATER, BlockLegacyIds::FLOWING_LAVA, BlockLegacyIds::STILL_LAVA], true)) {
+						$handler->changeBlock($x, $y, $z, $b);
+						return;
+					}
+				}
+				for ($i = -1; $i <= 1; $i++) {
+					for ($j = -1; $j <= 1; $j++) {
+						if ($i === 0 && $j === 0) {
+							continue;
+						}
+						$b = $handler->getBlock($x + $i, $y, $z + $j);
+						if (in_array($b >> Block::INTERNAL_METADATA_BITS, [BlockLegacyIds::FLOWING_WATER, BlockLegacyIds::STILL_WATER, BlockLegacyIds::FLOWING_LAVA, BlockLegacyIds::STILL_LAVA], true)) {
+							$handler->changeBlock($x, $y, $z, $b);
+							return;
+						}
+					}
+				}
 				$handler->changeBlock($x, $y, $z, 0);
 				return;
 			}
@@ -152,7 +173,8 @@ class SmoothTask extends SelectionEditTask
 			$anchor = $multiplier === 1 ? max($nMax, $oMax) : min($nMax, $oMax);
 
 			$position = ($anchor - $y + $multiplier * 1) / ($anchor - $nMin + $multiplier * 1);
-			$target = (int) round($anchor + $multiplier * $position * ($anchor - $oMin));
+			//absolutely no idea why this can exceed world limitations, but it does?
+			$target = (int) min(World::Y_MAX - 1, max(World::Y_MIN, round($anchor + $multiplier * $position * ($anchor - $oMin))));
 
 			if ($map[$target] < 1) {
 				return; //avoid populating with air due to merging anchor points
@@ -173,7 +195,7 @@ class SmoothTask extends SelectionEditTask
 			if ($depth !== 0) {
 				if ($start !== -1) {
 					for ($i = $start; $i < $y; $i++) {
-						$map[$i] = max(-1, $start - $i, $i - $y + 1);
+						$map[$i] = (int) max(-1, $start - $i, $i - $y + 1);
 					}
 				}
 				$start = -1;
@@ -185,7 +207,7 @@ class SmoothTask extends SelectionEditTask
 		}
 		if ($start !== -1) {
 			for ($i = $start; $i < World::Y_MAX; $i++) {
-				$map[$i] = max(-1, $start - $i);
+				$map[$i] = (int) max(-1, $start - $i);
 			}
 		}
 		return $map;

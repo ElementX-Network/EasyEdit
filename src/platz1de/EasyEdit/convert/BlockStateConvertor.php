@@ -6,7 +6,7 @@ use platz1de\EasyEdit\thread\EditThread;
 use platz1de\EasyEdit\thread\output\ResourceData;
 use platz1de\EasyEdit\utils\BlockParser;
 use platz1de\EasyEdit\utils\ExtendedBinaryStream;
-use platz1de\EasyEdit\utils\MixedUtils;
+use platz1de\EasyEdit\utils\RepoManager;
 use pocketmine\block\tile\Chest;
 use pocketmine\block\tile\ShulkerBox;
 use pocketmine\block\utils\SkullType;
@@ -40,12 +40,12 @@ class BlockStateConvertor
 	 */
 	private static array $compoundTagKeys;
 	/**
-	 * @var array<string, array<string, string>>
+	 * @var array<string, string[]>
 	 */
 	private static array $reverseCompoundMapping;
 	private static bool $available = false;
 
-	public static function load(string $bedrockPaletteSource, string $javaPaletteSource, string $tileDataSourcePalette, string $javaTileSource): void
+	public static function load(): void
 	{
 		self::$paletteFrom = [];
 		self::$paletteTo = [];
@@ -55,15 +55,16 @@ class BlockStateConvertor
 
 		try {
 			/** @var string $bedrockStringId */
-			foreach (MixedUtils::getJsonData($bedrockPaletteSource, 2) as $javaState => $bedrockStringId) {
+			foreach (RepoManager::getJson("bedrock_palette", 2) as $javaState => $bedrockStringId) {
 				self::$paletteFrom[$javaState] = BlockParser::fromStringId($bedrockStringId);
 			}
+
 			/** @var string $javaState */
-			foreach (MixedUtils::getJsonData($javaPaletteSource, 2) as $bedrockStringId => $javaState) {
+			foreach (RepoManager::getJson("java_palette", 2) as $bedrockStringId => $javaState) {
 				self::$paletteTo[BlockParser::fromStringId($bedrockStringId)] = $javaState;
 			}
 			/** @var array<string, array<string, string>> $tileDataPalette */
-			$tileDataPalette = MixedUtils::getJsonData($tileDataSourcePalette, 3);
+			$tileDataPalette = RepoManager::getJson("tile-data-states", 3);
 			if (!isset($tileDataPalette[TileConvertor::DATA_CHEST_RELATION])) {
 				EditThread::getInstance()->debug("Couldn't find chest relation data");
 			}
@@ -101,7 +102,7 @@ class BlockStateConvertor
 			}
 
 			/** @var array<string, array<string, array<string, string>>> $javaTilePalette */
-			$javaTilePalette = MixedUtils::getJsonData($javaTileSource, 4);
+			$javaTilePalette = RepoManager::getJson("java-tile-states", 4);
 			foreach ($javaTilePalette[TileConvertor::DATA_CHEST_RELATION] ?? [] as $state => $data) {
 				self::$compoundTagKeys[$state] = [Chest::TAG_PAIRX, Chest::TAG_PAIRZ];
 				foreach ($data as $type => $result) {
@@ -167,7 +168,7 @@ class BlockStateConvertor
 			self::$available = true;
 		} catch (Throwable $e) {
 			EditThread::getInstance()->getLogger()->error("Failed to parse state data, Sponge schematic conversion is not available");
-			EditThread::getInstance()->getLogger()->logException($e);
+			EditThread::getInstance()->getLogger()->debug($e->getMessage());
 		}
 
 		ResourceData::from();
@@ -232,7 +233,7 @@ class BlockStateConvertor
 	 */
 	public static function getState(int $id): string
 	{
-		return self::$paletteTo[$id] ?? self::$paletteTo[0];
+		return self::$paletteTo[$id] ?? "minecraft:air";
 	}
 
 	public static function getResourceData(): string

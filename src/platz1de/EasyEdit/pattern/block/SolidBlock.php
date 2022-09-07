@@ -2,65 +2,30 @@
 
 namespace platz1de\EasyEdit\pattern\block;
 
+use platz1de\EasyEdit\pattern\type\EmptyPatternData;
 use platz1de\EasyEdit\selection\Selection;
 use platz1de\EasyEdit\selection\SelectionContext;
+use platz1de\EasyEdit\world\ChunkController;
 use platz1de\EasyEdit\world\HeightMapCache;
-use platz1de\EasyEdit\world\SafeSubChunkExplorer;
 use pocketmine\block\Block;
 use pocketmine\utils\AssumptionFailedError;
 
-class SolidBlock extends StaticBlock
+class SolidBlock extends BlockType
 {
+	use EmptyPatternData;
+
 	/**
-	 * @param int                  $x
-	 * @param int                  $y
-	 * @param int                  $z
-	 * @param SafeSubChunkExplorer $iterator
-	 * @param Selection            $current
-	 * @param Selection            $total
+	 * @param int             $x
+	 * @param int             $y
+	 * @param int             $z
+	 * @param ChunkController $iterator
+	 * @param Selection       $current
+	 * @param Selection       $total
 	 * @return int
 	 */
-	public function getFor(int $x, int &$y, int $z, SafeSubChunkExplorer $iterator, Selection $current, Selection $total): int
+	public function getFor(int $x, int &$y, int $z, ChunkController $iterator, Selection $current, Selection $total): int
 	{
 		throw new AssumptionFailedError("Solid block group should only be used in comparison context");
-	}
-
-	/**
-	 * @return int
-	 */
-	public function get(): int
-	{
-		throw new AssumptionFailedError("Solid block group should only be used in comparison context");
-	}
-
-	/**
-	 * @return int
-	 */
-	public function getId(): int
-	{
-		throw new AssumptionFailedError("Solid block group should only be used in comparison context");
-	}
-
-	/**
-	 * @return int
-	 */
-	public function getMeta(): int
-	{
-		throw new AssumptionFailedError("Solid block group should only be used in comparison context");
-	}
-
-	public function check(): void { }
-
-	/**
-	 * @return SolidBlock
-	 */
-	public static function create(): SolidBlock
-	{
-		$pattern = self::from([]);
-		if (!$pattern instanceof self) {
-			throw new AssumptionFailedError("SolidBlock was wrapped into a parent pattern while creating instance");
-		}
-		return $pattern;
 	}
 
 	/**

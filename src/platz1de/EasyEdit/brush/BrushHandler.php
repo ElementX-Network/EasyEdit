@@ -2,6 +2,7 @@
 
 namespace platz1de\EasyEdit\brush;
 
+use platz1de\EasyEdit\EasyEdit;
 use platz1de\EasyEdit\Messages;
 use platz1de\EasyEdit\pattern\functional\NaturalizePattern;
 use platz1de\EasyEdit\pattern\parser\ParseError;
@@ -12,6 +13,7 @@ use platz1de\EasyEdit\selection\Sphere;
 use platz1de\EasyEdit\task\DynamicStoredPasteTask;
 use platz1de\EasyEdit\task\editing\selection\pattern\SetTask;
 use platz1de\EasyEdit\task\editing\selection\SmoothTask;
+use pocketmine\block\BlockLegacyIds;
 use pocketmine\nbt\tag\CompoundTag;
 use pocketmine\player\Player;
 use pocketmine\world\Position;

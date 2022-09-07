@@ -65,7 +65,7 @@ class EasyEdit extends PluginBase
 	{
 		self::$instance = $this;
 
-		if (!is_dir(self::getSchematicPath()) && !mkdir(self::getSchematicPath()) && !is_dir(self::getSchematicPath())) {
+		if (!is_dir(self::getSchematicPath()) && !mkdir(self::getSchematicPath(), 0777, true) && !is_dir(self::getSchematicPath())) {
 			throw new AssumptionFailedError("Failed to created schematic directory");
 		}
 
@@ -148,9 +148,26 @@ class EasyEdit extends PluginBase
 
 	/**
 	 * @return string
+	 * @internal
+	 */
+	public static function getResourcePath(): string
+	{
+		return self::getInstance()->getFile() . "resources";
+	}
+
+	/**
+	 * @return string
 	 */
 	public static function getSchematicPath(): string
 	{
 		return self::getInstance()->getDataFolder() . "schematics" . DIRECTORY_SEPARATOR;
+	}
+
+	/**
+	 * @return string
+	 */
+	public static function getCachePath(): string
+	{
+		return self::getInstance()->getDataFolder() . "cache" . DIRECTORY_SEPARATOR;
 	}
 }

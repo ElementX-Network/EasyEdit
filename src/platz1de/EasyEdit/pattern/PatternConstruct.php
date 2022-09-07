@@ -3,27 +3,33 @@
 namespace platz1de\EasyEdit\pattern;
 
 use Exception;
+use platz1de\EasyEdit\pattern\type\EmptyPatternData;
 use platz1de\EasyEdit\selection\Selection;
-use platz1de\EasyEdit\world\SafeSubChunkExplorer;
+use platz1de\EasyEdit\world\ChunkController;
 use pocketmine\utils\AssumptionFailedError;
 
 final class PatternConstruct extends Pattern
 {
+	use EmptyPatternData;
+
 	/**
-	 * @param Pattern[]                $pieces
-	 * @param PatternArgumentData|null $args
+	 * @param Pattern[] $pieces
 	 * @return Pattern
 	 */
-	public static function from(array $pieces, ?PatternArgumentData $args = null): Pattern
+	public static function wrap(array $pieces): Pattern
 	{
 		if (count($pieces) === 1) {
-			return $pieces[0];
+			if ($pieces[0]->getWeight() === 100) {
+				return $pieces[0]; //no need to wrap single patterns
+			}
+
+			return new PatternWrapper($pieces);
 		}
 
-		return parent::from($pieces, $args);
+		return new self($pieces);
 	}
 
-	public function getFor(int $x, int &$y, int $z, SafeSubChunkExplorer $iterator, Selection $current, Selection $total): int
+	public function getFor(int $x, int &$y, int $z, ChunkController $iterator, Selection $current, Selection $total): int
 	{
 		foreach ($this->pieces as $piece) {
 			try {
